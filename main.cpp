@@ -97,7 +97,6 @@ int main(int argc, char** argv) {
     TMatrix P = GetTransitionMatrix(N);
     std::cout << "Determinant: " << P.determinant() << std::endl;
     std::cout << "Determinant (P - E): " << (P - TMatrix::Identity(N, N)).determinant() << std::endl;
-    NGrapher::TGrapher drawing(P, "chain");
     NGraph::TGraph graph(P);
     graph.FillStronglyConnectedComponents();
     auto components = graph.GetStronglyConnectedComponents();
@@ -181,6 +180,7 @@ int main(int argc, char** argv) {
         }
         std::cout << std::endl;
     }
+    NGrapher::TGrapher drawing(P, "chain", totalDistribution);
     std::cout << "totalDistribution:\n";
     for (size_t i = 0, end = totalDistribution.size(); i < end; ++i) {
         std::cout << i << ": " << totalDistribution[i] << std::endl;

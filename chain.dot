@@ -1,6 +1,21 @@
 digraph MarkovChain {
     rankdir=LR;
     node [shape=circle];
+    S0[label="S0", penwidth=0.189446];
+    S1[label="S1", penwidth=1.4012];
+    S2[label="S2", penwidth=0.232288];
+    S3[label="S3", penwidth=0.1];
+    S4[label="S4", penwidth=1.17117];
+    S5[label="S5", penwidth=2.73326];
+    S6[label="S6", penwidth=0.1];
+    S7[label="S7", penwidth=0.1];
+    S8[label="S8", penwidth=0.247573];
+    S9[label="S9", penwidth=5.54489];
+    S10[label="S10", penwidth=3.54437];
+    S11[label="S11", penwidth=0.507164];
+    S12[label="S12", penwidth=2.67545];
+    S13[label="S13", penwidth=1.7532];
+    S14[label="S14", penwidth=0.1];
     S0 -> S2 [label="0.36", penwidth=1.80];
     S0 -> S8 [label="0.24", penwidth=1.20];
     S0 -> S11 [label="0.40", penwidth=2.00];
