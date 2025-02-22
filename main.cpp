@@ -62,14 +62,14 @@ void NormalizeMatrix(TMatrix& matrix) {
         if (NUtils::Equals(sum, 1)) continue;
         for (int j = 0; j < cols; ++j) {
             if (NUtils::Equals(matrix(i, j), 0)) continue;
-            matrix(i, j) /= sum;            
+            matrix(i, j) /= sum;
         }
         if (NUtils::Equals(sum, 0)) {
             matrix(i, i) = 1;
         }
     }
 }
- 
+
 TMatrix GenerateMatrix(const std::vector<std::unordered_map<int, Type>>& other) {
     int n = other.size();
 
@@ -165,7 +165,7 @@ int main(int argc, char** argv) {
         std::vector<Type> errors = CountError(analyticSolution, simulateSolution);
 
         for (int i = 0; i < n; ++i) {
-            totalDistribution[components[p][i]] = transitions(0, p) * analyticSolution[i]; 
+            totalDistribution[components[p][i]] = transitions(0, p) * analyticSolution[i];
         }
 
         {
