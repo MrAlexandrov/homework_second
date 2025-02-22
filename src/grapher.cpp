@@ -55,7 +55,7 @@ std::string TGrapher::GenerateArrow(int from, int to, Type label, Type penwidth)
     std::stringstream command;
     command << "    "
             << "S" << from << " -> S" << to
-            << " label=\"" << std::fixed << std::setprecision(2)
+            << " [label=\"" << std::fixed << std::setprecision(2)
             << label << "\", "
             << "penwidth=" << penwidth << "];\n";
     return command.str();
