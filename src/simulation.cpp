@@ -42,7 +42,7 @@ void TSimulationSolution::SimulateSolution(int imitations, int iterations) {
 }
 
 void TSimulationSolution::Imitation(int iterations) {
-    int currentState = 0;
+    int currentState = NUtils::GenerateIntNumber(0, NumberStates_ - 1);
     for (int i = 0; i < iterations; ++i, currentState = GetNextState(currentState)) {
         Count_[currentState].fetch_add(1);
     }
