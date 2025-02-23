@@ -129,7 +129,7 @@ int main(int argc, char** argv) {
     TMatrix condensatedMatrix = GenerateMatrix(condensatedGraph);
 
     std::cout << "condensatedMatrix:\n";
-    std::cout << condensatedMatrix << std::endl;
+    std::cout << condensatedMatrix << "\n\n";
 
     NAnalitycal::TAnalyticalSolution condensatedSolution(condensatedMatrix);
     auto condensationDistribution = condensatedSolution.GetDistribution();
@@ -170,7 +170,7 @@ int main(int argc, char** argv) {
 
         {
             std::cout << "Component " << currentColor << ":\n";
-            std::cout << "Nodes:\n";
+            std::cout << "Nodes: ";
             for (const auto& node : stronglyConnectedComponents[currentColor]) {
                 std::cout << node << " ";
             }
