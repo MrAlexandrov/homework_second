@@ -95,22 +95,27 @@ int main(int argc, char** argv) {
     std::cin >> N;
     std::cout << N << std::endl;
     TMatrix P = GetTransitionMatrix(N);
+    #ifdef DEBUG
     std::cout << "Determinant: " << P.determinant() << std::endl;
     std::cout << "Determinant (P - E): " << (P - TMatrix::Identity(N, N)).determinant() << std::endl;
+    #endif // DEBUG
     NGraph::TGraph graph(P);
     graph.FillStronglyConnectedComponents();
-    auto components = graph.GetStronglyConnectedComponents();
-    std::cout << "components:\n";
-    for (const auto& i : components) {
+    auto color = graph.GetColor();
+    auto stronglyConnectedComponents = graph.GetStronglyConnectedComponents();
+    #ifdef DEBUG
+    std::cout << "stronglyConnectedComponents:\n";
+    for (const auto& i : stronglyConnectedComponents) {
         for (const auto& j : i) {
             std::cout << j << " ";
         }
         std::cout << "\n";
     }
     std::cout << std::endl;
+    #endif // DEBUG
     graph.FillCondensation();
     auto condensation = graph.GetCondensation();
-    auto color = graph.GetColor();
+    #ifdef DEBUG
     std::cout << "condensation:\n";
     for (int i = 0, end = condensation.size(); i < end; ++i) {
         std::cout << i << ": ";
@@ -120,16 +125,17 @@ int main(int argc, char** argv) {
         std::cout << "\n";
     }
     std::cout << std::endl;
-    TMatrix transitions = GenerateMatrix(condensation);
-    std::cout << "transitions:\n";
-    std::cout << transitions << std::endl;
+    #endif // DEBUG
+    TMatrix condensatedMatrix = GenerateMatrix(condensation);
+    #ifdef DEBUG
+    std::cout << "condensatedMatrix:\n";
+    std::cout << condensatedMatrix << std::endl;
+    #endif // DEBUG
+    NAnalitycal::TAnalyticalSolution condensatedSolution(condensatedMatrix);
+    auto condensationDistribution = condensatedSolution.GetDistribution();
 
-    NAnalitycal::TAnalyticalSolution asdf(transitions);
-    auto qwer = asdf.GetDistribution();
-
-
-    std::vector<TMatrix> MatrixComponents;
-    for (const auto& component : components) {
+    std::vector<TMatrix> condensatedComponents;
+    for (const auto& component : stronglyConnectedComponents) {
         size_t n = component.size();
         TMatrix comp(n, n);
         for (int i = 0; i < n; ++i) {
@@ -137,34 +143,29 @@ int main(int argc, char** argv) {
                 comp(i, j) = P(component[i], component[j]);
             }
         }
-        MatrixComponents.emplace_back(comp);
+        condensatedComponents.emplace_back(comp);
     }
 
     std::vector<Type> totalDistribution(N, 0);
 
-    for (size_t p = 0, end = MatrixComponents.size(); p < end; ++p) {
-        const auto& current = MatrixComponents[p];
-        int n = current.rows();
-        bool ok = true;
-        for (int i = 0; i < n; ++i) {
-            Type sum = 0;
-            for (int j = 0; j < n; ++j) {
-                sum += current(i, j);
-            }
-            if (!NUtils::Equals(sum, 1)) ok = false;
-        }
-        if (!ok) continue;
-        std::cout << "current:\n";
-        std::cout << current << std::endl;
-
-        NAnalitycal::TAnalyticalSolution analytic(current);
-        NSimulation::TSimulationSolution simulate(current, Imitations, Iterations);
-        std::vector<Type> analyticSolution = analytic.GetDistribution();
-        std::vector<Type> simulateSolution = simulate.GetDistribution();
-        std::vector<Type> errors = CountError(analyticSolution, simulateSolution);
+    for (size_t currentColor = 0, end = condensatedComponents.size(); currentColor < end; ++currentColor) {
+        const auto& currentComponent = condensatedComponents[currentColor];
+        int n = currentComponent.rows();
+        if (!NUtils::Equals(condensatedMatrix(currentColor, currentColor), 1)) continue;
+        #ifdef DEBUG
+        std::cout << "currentComponent:\n";
+        std::cout << currentComponent << std::endl;
+        #endif // DEBUG
+        NAnalitycal::TAnalyticalSolution analytic(currentComponent);
+        NSimulation::TSimulationSolution imitated(currentComponent, Imitations, Iterations);
+        std::vector<Type> analyticDistribution = analytic.GetDistribution();
+        std::vector<Type> imitatedDistribution = imitated.GetDistribution();
+        std::vector<Type> errors = CountError(analyticDistribution, imitatedDistribution);
 
         for (int i = 0; i < n; ++i) {
-            totalDistribution[components[p][i]] = transitions(0, p) * analyticSolution[i];
+            const auto& globalNumber = stronglyConnectedComponents[currentColor][i];
+            // distribution = <probability of being in component> * <probability of being at vertex>
+            totalDistribution[globalNumber] = condensatedMatrix(0, currentColor) * analyticDistribution[i];
         }
 
         {
@@ -174,8 +175,8 @@ int main(int argc, char** argv) {
                 6
             );
 
-            PrintResults("Analytical distribution:", analyticSolution);
-            PrintResults("Imitated distribution:", simulateSolution);
+            PrintResults("Analytical distribution:", analyticDistribution);
+            PrintResults("Imitated distribution:", imitatedDistribution);
             PrintResults("Errors:", errors);
         }
         std::cout << std::endl;
