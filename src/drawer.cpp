@@ -65,8 +65,8 @@ std::string TDrawer::GenerateNodesPenwidthCommand() const {
     if (Probability_.empty()) return {};
     std::stringstream command;
     for (size_t i = 0, end = P_.rows(); i < end; ++i) {
-        command << "    S" << i 
-                << "[label=\"S" 
+        command << "    S" << i
+                << "[label=\"S"
                 << i << "\", penwidth=" << std::max(0.1, Probability_[i] * PenWidthNodeMultiplyer)
                 << "];\n";
     }

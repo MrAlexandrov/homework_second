@@ -114,23 +114,23 @@ int main(int argc, char** argv) {
     std::cout << std::endl;
     #endif // DEBUG
     graph.FillCondensation();
-    auto condensation = graph.GetCondensation();
+    auto condensatedGraph = graph.GetCondensation();
     #ifdef DEBUG
-    std::cout << "condensation:\n";
-    for (int i = 0, end = condensation.size(); i < end; ++i) {
+    std::cout << "condensatedGraph:\n";
+    for (int i = 0, end = condensatedGraph.size(); i < end; ++i) {
         std::cout << i << ": ";
-        for (const auto& [to, weight] : condensation[i]) {
+        for (const auto& [to, weight] : condensatedGraph[i]) {
             std::cout << to << ", " << weight << "\t\t";
         }
         std::cout << "\n";
     }
     std::cout << std::endl;
     #endif // DEBUG
-    TMatrix condensatedMatrix = GenerateMatrix(condensation);
-    #ifdef DEBUG
+    TMatrix condensatedMatrix = GenerateMatrix(condensatedGraph);
+
     std::cout << "condensatedMatrix:\n";
     std::cout << condensatedMatrix << std::endl;
-    #endif // DEBUG
+
     NAnalitycal::TAnalyticalSolution condensatedSolution(condensatedMatrix);
     auto condensationDistribution = condensatedSolution.GetDistribution();
 
@@ -169,6 +169,12 @@ int main(int argc, char** argv) {
         }
 
         {
+            std::cout << "Component " << currentColor << ":\n";
+            std::cout << "Nodes:\n";
+            for (const auto& node : stronglyConnectedComponents[currentColor]) {
+                std::cout << node << " ";
+            }
+            std::cout << "\n";
             NPrecision::TPrecision changer(
                 std::cout.flags(),
                 std::cout.precision(),
