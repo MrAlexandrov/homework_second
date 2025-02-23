@@ -67,8 +67,12 @@ void TGraph::FillStronglyConnectedComponents() {
     used.assign(Nodes_, false);
     for (const auto& to : output) {
         if (used[to]) continue;
+        size_t currentColor = Components_.size();
         Components_.push_back({});
         FillComponent(to, used);
+        for (const auto& from : Components_.back()) {
+            Color_[from] = currentColor;
+        }
     }
 }
 
@@ -92,7 +96,6 @@ void TGraph::TopologicalSort(int from, std::vector<bool>& used, std::vector<int>
 void TGraph::FillComponent(int from, std::vector<bool>& used) {
     used[from] = true;
     Components_.back().push_back(from);
-    Color_[from] = static_cast<int>(Components_.size()) - 1;
     for (const auto& [to, weight] : ReversedGraph_[from]) {
         if (used[to]) continue;
         FillComponent(to, used);
