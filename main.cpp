@@ -1,6 +1,6 @@
 #include "analytical.hpp"
 #include "graph.hpp"
-#include "grapher.hpp"
+#include "drawer.hpp"
 #include "precision.hpp"
 #include "simulation.hpp"
 #include "utils.hpp"
@@ -181,7 +181,7 @@ int main(int argc, char** argv) {
         }
         std::cout << std::endl;
     }
-    NGrapher::TGrapher drawing(P, "chain", totalDistribution);
+    NDrawer::TDrawer drawing(P, "chain", totalDistribution);
     std::cout << "totalDistribution:\n";
     for (size_t i = 0, end = totalDistribution.size(); i < end; ++i) {
         std::cout << i << ": " << totalDistribution[i] << std::endl;

@@ -1,4 +1,4 @@
-#include "grapher.hpp"
+#include "drawer.hpp"
 
 #include <sstream>
 #include <string>
@@ -7,12 +7,12 @@
 #include <iomanip>
 #include <vector>
 
-namespace NGrapher {
+namespace NDrawer {
 
 constexpr double PenWidthArrowMultiplyer = 5;
 constexpr double PenWidthNodeMultiplyer = 20;
 
-TGrapher::TGrapher(
+TDrawer::TDrawer(
     const TMatrix& P,
     std::string filename = "default",
     const std::vector<Type>& probability = {}
@@ -25,7 +25,7 @@ TGrapher::TGrapher(
     GenerateImage();
 }
 
-void TGrapher::GenerateDotFile() const {
+void TDrawer::GenerateDotFile() const {
     size_t n = P_.rows();
     std::ofstream dotFile(Filename_ + ".dot");
     if (!dotFile.is_open()) {
@@ -51,7 +51,7 @@ void TGrapher::GenerateDotFile() const {
     dotFile << "}\n";
 }
 
-std::string TGrapher::GenerateArrow(int from, int to, Type label, Type penwidth) const {
+std::string TDrawer::GenerateArrow(int from, int to, Type label, Type penwidth) const {
     std::stringstream command;
     command << "    "
             << "S" << from << " -> S" << to
@@ -61,7 +61,7 @@ std::string TGrapher::GenerateArrow(int from, int to, Type label, Type penwidth)
     return command.str();
 }
 
-std::string TGrapher::GenerateNodesPenwidthCommand() const {
+std::string TDrawer::GenerateNodesPenwidthCommand() const {
     if (Probability_.empty()) return {};
     std::stringstream command;
     for (size_t i = 0, end = P_.rows(); i < end; ++i) {
@@ -73,7 +73,7 @@ std::string TGrapher::GenerateNodesPenwidthCommand() const {
     return command.str();
 }
 
-void TGrapher::GenerateImage() const {
+void TDrawer::GenerateImage() const {
     try {
         std::string command = "dot -Tpng " + Filename_ + ".dot -o " + Filename_ + ".png";
         if (system(command.c_str()) != 0) {
@@ -86,4 +86,4 @@ void TGrapher::GenerateImage() const {
     }
 }
 
-} // namespace NGrapher
+} // namespace NDrawer

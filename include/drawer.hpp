@@ -5,13 +5,13 @@
 #include <string>
 #include <vector>
 
-namespace NGrapher {
+namespace NDrawer {
 
 using namespace NTypes;
 
-class TGrapher{
+class TDrawer{
 public:
-    TGrapher(const TMatrix& P, std::string filename, const std::vector<Type>& probability);
+    TDrawer(const TMatrix& P, std::string filename, const std::vector<Type>& probability);
 
 private:
     void GenerateDotFile() const;
@@ -25,4 +25,4 @@ private:
     std::vector<Type> Probability_;
 };
 
-} // namespace NGrapher
+} // namespace NDrawer
