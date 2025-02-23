@@ -80,9 +80,9 @@ void TDrawer::GenerateImage() const {
             throw std::runtime_error("Failed to generate PNG image");
         }
 
-        std::cout << "PNG image created successfully: " << Filename_ << ".png" << std::endl;
+        std::cout << "PNG image created successfully: " << Filename_ << ".png" << "\n";
     } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
+        std::cerr << "Error: " << e.what() << "\n";
     }
 }
 

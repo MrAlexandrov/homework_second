@@ -30,7 +30,7 @@ std::vector<std::unordered_map<int, Type>> TGraph::GetCondensation() const {
     for (const auto& i : Color_) {
         std::cout << i << " ";
     }
-    std::cout << std::endl;
+    std::cout << "\n";
     #endif // DEBUG
     return Condensation_;
 }
@@ -39,14 +39,14 @@ void TGraph::FillCondensation() {
     Condensation_.resize(Components_.size());
     for (int from = 0; from < Nodes_; ++from) {
         #ifdef DEBUG
-        std::cout << "from: " << from << std::endl;
+        std::cout << "from: " << from << "\n";
         #endif // DEBUG
         for (const auto& [to, weight] : Graph_[from]) {
             auto fromComponent = Color_[from];
             auto toComponent = Color_[to];
             #ifdef DEBUG
-            std::cout << "fromComponent, toComponent: " << fromComponent << " " << toComponent << std::endl;
-            std::cout << "weight: " << weight << std::endl;
+            std::cout << "fromComponent, toComponent: " << fromComponent << " " << toComponent << "\n";
+            std::cout << "weight: " << weight << "\n";
             #endif // DEBUG
             if (NUtils::Equals(weight, 0) || fromComponent == toComponent) continue;
             Condensation_[fromComponent][toComponent] += weight;
@@ -55,25 +55,16 @@ void TGraph::FillCondensation() {
 }
 
 void TGraph::FillStronglyConnectedComponents() {
-    std::vector<bool> used(Nodes_, false);
-    std::vector<int> output;
-
-    for (int i = 0; i < Nodes_; ++i) {
-        if (used[i]) continue;
-        TopologicalSort(i, used, output);
-    }
+    std::vector<int> output = GetTopologicalSort();
     std::reverse(output.begin(), output.end());
 
-    used.assign(Nodes_, false);
+    std::vector<bool> used(Nodes_);
     for (const auto& to : output) {
         if (used[to]) continue;
-        size_t currentColor = Components_.size();
         Components_.push_back({});
         FillComponent(to, used);
-        for (const auto& from : Components_.back()) {
-            Color_[from] = currentColor;
-        }
     }
+    FillColors();
 }
 
 std::vector<std::vector<int>> TGraph::GetStronglyConnectedComponents() const {
@@ -84,11 +75,22 @@ std::vector<int> TGraph::GetColor() const {
     return Color_;
 }
 
-void TGraph::TopologicalSort(int from, std::vector<bool>& used, std::vector<int>& output) const {
+std::vector<int> TGraph::GetTopologicalSort() const {
+    std::vector<bool> used(Nodes_, false);
+    std::vector<int> output;
+
+    for (int i = 0; i < Nodes_; ++i) {
+        if (used[i]) continue;
+        TopologicalSortImpl(i, used, output);
+    }
+    return output;
+}
+
+void TGraph::TopologicalSortImpl(int from, std::vector<bool>& used, std::vector<int>& output) const {
     used[from] = true;
-    for (const auto&[to, weight] : Graph_[from]) {
+    for (const auto&[to, _] : Graph_[from]) {
         if (used[to]) continue;
-        TopologicalSort(to, used, output);
+        TopologicalSortImpl(to, used, output);
     }
     output.push_back(from);
 }
@@ -96,9 +98,17 @@ void TGraph::TopologicalSort(int from, std::vector<bool>& used, std::vector<int>
 void TGraph::FillComponent(int from, std::vector<bool>& used) {
     used[from] = true;
     Components_.back().push_back(from);
-    for (const auto& [to, weight] : ReversedGraph_[from]) {
+    for (const auto& [to, _] : ReversedGraph_[from]) {
         if (used[to]) continue;
         FillComponent(to, used);
+    }
+}
+
+void TGraph::FillColors() {
+    for (int currentColor = 0, end = Components_.size(); currentColor < end; ++currentColor) {
+        for (const auto& element : Components_[currentColor]) {
+            Color_[element] = currentColor;
+        }
     }
 }
 

@@ -6,6 +6,7 @@
 #include "utils.hpp"
 
 #include <Eigen/Dense>
+#include <algorithm>
 #include <iostream>
 #include <string_view>
 #include <unordered_map>
@@ -34,7 +35,7 @@ void PrintResults(std::string_view text, const std::vector<Type>& results) {
     for (const auto& i : results) {
         std::cout << i << " ";
     }
-    std::cout << std::endl;
+    std::cout << "\n";
 }
 
 std::vector<Type> CountError(const std::vector<Type>& lhs, const std::vector<Type>& rhs) {
@@ -93,11 +94,20 @@ int main(int argc, char** argv) {
 
     size_t N = 5;
     std::cin >> N;
-    std::cout << N << std::endl;
+    std::cout << N << "\n";
     TMatrix P = GetTransitionMatrix(N);
+    {
+        NSimulation::TSimulationSolution totalSimulated(P, Imitations, Iterations);
+        auto totalSimulatedDistribution = totalSimulated.GetDistribution();
+        std::cout << "totalSimulatedDistribution:\n";
+        for (const auto& i : totalSimulatedDistribution) {
+            std::cout << i << " ";
+        } 
+        std::cout << "\n";
+    }
     #ifdef DEBUG
-    std::cout << "Determinant: " << P.determinant() << std::endl;
-    std::cout << "Determinant (P - E): " << (P - TMatrix::Identity(N, N)).determinant() << std::endl;
+    std::cout << "Determinant: " << P.determinant() << "\n";
+    std::cout << "Determinant (P - E): " << (P - TMatrix::Identity(N, N)).determinant() << "\n";
     #endif // DEBUG
     NGraph::TGraph graph(P);
     graph.FillStronglyConnectedComponents();
@@ -111,7 +121,7 @@ int main(int argc, char** argv) {
         }
         std::cout << "\n";
     }
-    std::cout << std::endl;
+    std::cout << "\n";
     #endif // DEBUG
     graph.FillCondensation();
     auto condensatedGraph = graph.GetCondensation();
@@ -124,12 +134,44 @@ int main(int argc, char** argv) {
         }
         std::cout << "\n";
     }
-    std::cout << std::endl;
+    std::cout << "\n";
     #endif // DEBUG
     TMatrix condensatedMatrix = GenerateMatrix(condensatedGraph);
-
     std::cout << "condensatedMatrix:\n";
     std::cout << condensatedMatrix << "\n\n";
+
+    // Distribution, when we start in random node
+    NGraph::TGraph condensated(condensatedMatrix);
+    auto topologyCondensatedGraph = condensated.GetTopologicalSort();
+    std::reverse(topologyCondensatedGraph.begin(), topologyCondensatedGraph.end());
+    int m = condensatedMatrix.rows();
+    std::vector<Type> probabilityRandomStart(m, 0);
+    for (int i = 0; i < m; ++i) {
+        probabilityRandomStart[i] = static_cast<double>(stronglyConnectedComponents[i].size()) / N;
+    }
+    std::cout << "probabilityRandomStart start in component:\n";
+    for (const auto& i : probabilityRandomStart) {
+        std::cout << i << " ";
+    }
+    std::cout << "\n" << "\n";
+    for (int i = 0; i < m; ++i) {
+        int from = topologyCondensatedGraph[i];
+        for (int j = 0; j < m; ++j) {
+            if (i == j) continue;
+            int to = topologyCondensatedGraph[j];
+            Type transition = condensatedMatrix(from, to);
+            if (NUtils::Equals(transition, 0)) continue;
+            probabilityRandomStart[to] += probabilityRandomStart[from] * transition;
+        }
+        if (!NUtils::Equals(condensatedMatrix(from, from), 1)) {
+            probabilityRandomStart[from] = 0;
+        }
+    }
+    std::cout << "probabilityRandomStart:\n";
+    for (const auto& i : probabilityRandomStart) {
+        std::cout << i << " ";
+    }
+    std::cout << "\n" << "\n";
 
     NAnalitycal::TAnalyticalSolution condensatedSolution(condensatedMatrix);
     auto condensationDistribution = condensatedSolution.GetDistribution();
@@ -146,16 +188,14 @@ int main(int argc, char** argv) {
         condensatedComponents.emplace_back(comp);
     }
 
-    std::vector<Type> totalDistribution(N, 0);
+    std::vector<Type> definedStart(N, 0);
+    std::vector<Type> randomStart(N, 0);
 
     for (size_t currentColor = 0, end = condensatedComponents.size(); currentColor < end; ++currentColor) {
         const auto& currentComponent = condensatedComponents[currentColor];
         int n = currentComponent.rows();
+        // check if state is irrevocable
         if (!NUtils::Equals(condensatedMatrix(currentColor, currentColor), 1)) continue;
-        #ifdef DEBUG
-        std::cout << "currentComponent:\n";
-        std::cout << currentComponent << std::endl;
-        #endif // DEBUG
         NAnalitycal::TAnalyticalSolution analytic(currentComponent);
         NSimulation::TSimulationSolution imitated(currentComponent, Imitations, Iterations);
         std::vector<Type> analyticDistribution = analytic.GetDistribution();
@@ -165,7 +205,8 @@ int main(int argc, char** argv) {
         for (int i = 0; i < n; ++i) {
             const auto& globalNumber = stronglyConnectedComponents[currentColor][i];
             // distribution = <probability of being in component> * <probability of being at vertex>
-            totalDistribution[globalNumber] = condensatedMatrix(0, currentColor) * analyticDistribution[i];
+            definedStart[globalNumber] = condensatedMatrix(0, currentColor) * analyticDistribution[i];
+            randomStart[globalNumber] = probabilityRandomStart[currentColor] * analyticDistribution[i];
         }
 
         {
@@ -175,6 +216,8 @@ int main(int argc, char** argv) {
                 std::cout << node << " ";
             }
             std::cout << "\n";
+            std::cout << "currentComponent:\n";
+            std::cout << currentComponent << "\n";
             NPrecision::TPrecision changer(
                 std::cout.flags(),
                 std::cout.precision(),
@@ -185,12 +228,25 @@ int main(int argc, char** argv) {
             PrintResults("Imitated distribution:", imitatedDistribution);
             PrintResults("Errors:", errors);
         }
-        std::cout << std::endl;
+        std::cout << "\n";
     }
-    NDrawer::TDrawer drawing(P, "chain", totalDistribution);
-    std::cout << "totalDistribution:\n";
-    for (size_t i = 0, end = totalDistribution.size(); i < end; ++i) {
-        std::cout << i << ": " << totalDistribution[i] << std::endl;
+    NDrawer::TDrawer drawing(P, "chain", definedStart);
+    std::cout << "definedStart:\n";
+    Type sumDefinedStart = 0;
+    for (size_t i = 0, end = definedStart.size(); i < end; ++i) {
+        std::cout << i << ": " << definedStart[i] << "\n";
+        sumDefinedStart += definedStart[i];
     }
+    std::cout << "sumDefinedStart: " << sumDefinedStart << "\n";
+    std::cout << "\n";
+
+    std::cout << "randomStart:\n";
+    Type sumRandomStart = 0;
+    for (size_t i = 0, end = randomStart.size(); i < end; ++i) {
+        std::cout << i << ": " << randomStart[i] << "\n";
+        sumRandomStart += randomStart[i];
+    }
+    std::cout << "sumRandomStart: " << sumRandomStart << "\n";
+    std::cout << "\n";
     return 0;
 }

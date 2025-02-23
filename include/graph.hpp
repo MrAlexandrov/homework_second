@@ -26,9 +26,12 @@ public:
 
     std::vector<int> GetColor() const;
 
+    std::vector<int> GetTopologicalSort() const;
+
 private:
-    void TopologicalSort(int from, std::vector<bool>& used, std::vector<int>& output) const;
+    void TopologicalSortImpl(int from, std::vector<bool>& used, std::vector<int>& output) const;
     void FillComponent(int from, std::vector<bool>& used);
+    void FillColors();
 
 private:
     int Nodes_;

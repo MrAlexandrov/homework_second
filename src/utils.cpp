@@ -17,7 +17,7 @@ double GenerateRandomNumber() {
 int GenerateIntNumber(int from, int to) {
     static std::random_device rd;
     static std::mt19937 gen(rd());
-    static std::uniform_int_distribution<> dis(from, to);
+    std::uniform_int_distribution<> dis(from, to);
 
     return dis(gen);
 }
