@@ -4,7 +4,6 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <vector>
-#include <iostream>
 #include <unordered_map>
 
 namespace NGraph {
@@ -25,29 +24,15 @@ TGraph::TGraph(const TMatrix& P)
 }
 
 std::vector<std::unordered_map<int, Type>> TGraph::GetCondensation() const {
-    #ifdef DEBUG
-    std::cout << "Color:\n";
-    for (const auto& i : Color_) {
-        std::cout << i << " ";
-    }
-    std::cout << "\n";
-    #endif // DEBUG
     return Condensation_;
 }
 
 void TGraph::FillCondensation() {
     Condensation_.resize(Components_.size());
     for (int from = 0; from < Nodes_; ++from) {
-        #ifdef DEBUG
-        std::cout << "from: " << from << "\n";
-        #endif // DEBUG
         for (const auto& [to, weight] : Graph_[from]) {
             auto fromComponent = Color_[from];
             auto toComponent = Color_[to];
-            #ifdef DEBUG
-            std::cout << "fromComponent, toComponent: " << fromComponent << " " << toComponent << "\n";
-            std::cout << "weight: " << weight << "\n";
-            #endif // DEBUG
             if (NUtils::Equals(weight, 0) || fromComponent == toComponent) continue;
             Condensation_[fromComponent][toComponent] += weight;
         }

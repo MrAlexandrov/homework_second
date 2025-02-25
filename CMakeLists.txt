@@ -8,7 +8,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 
-find_package(Boost REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
 file(GLOB SRC_FILES "src/*.cpp")

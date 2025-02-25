@@ -4,7 +4,6 @@
 #include <vector>
 #include <boost/asio.hpp>
 #include <thread>
-#include <iostream>
 
 namespace NSimulation {
 
