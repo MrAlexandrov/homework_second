@@ -2,7 +2,7 @@
 #include "graph.hpp"
 #include "drawer.hpp"
 #include "precision.hpp"
-#include "simulation.hpp"
+#include "imitation.hpp"
 #include "utils.hpp"
 
 #include <Eigen/Dense>
@@ -101,9 +101,9 @@ int main(int argc, char** argv) {
     TMatrix P = GetTransitionMatrix(N);
     std::cout << "P:\n" << P << "\n\n";
 
-    NSimulation::TSimulationSolution totalSimulated(P, Imitations, Iterations);
-    auto totalSimulatedDistribution = totalSimulated.GetDistribution();
-    PrintResults("totalSimulatedDistribution:", totalSimulatedDistribution);
+    NImitation::TImitationSolution totalImitated(P, Imitations, Iterations);
+    auto totalImitatedDistribution = totalImitated.GetDistribution();
+    PrintResults("totalImitatedDistribution:", totalImitatedDistribution);
 
     NGraph::TGraph graph(P);
     graph.FillStronglyConnectedComponents();
@@ -120,32 +120,34 @@ int main(int argc, char** argv) {
     auto topologyCondensatedGraph = condensated.GetTopologicalSort();
     std::reverse(topologyCondensatedGraph.begin(), topologyCondensatedGraph.end());
     int amountStronglyConnectedComponents = condensatedMatrix.rows();
+
+    // probability to reach irrevocable states
     std::vector<Type> probabilityRandomStart(amountStronglyConnectedComponents, 0);
-    for (int i = 0; i < amountStronglyConnectedComponents; ++i) {
-        probabilityRandomStart[i] = static_cast<double>(stronglyConnectedComponents[i].size()) / N;
-    }
-    PrintResults("probabilityRandomStart start in component:", probabilityRandomStart);
-
-    for (int i = 0; i < amountStronglyConnectedComponents; ++i) {
-        int from = topologyCondensatedGraph[i];
-        for (int j = 0; j < amountStronglyConnectedComponents; ++j) {
-            if (i == j) continue;
-            int to = topologyCondensatedGraph[j];
-            Type transition = condensatedMatrix(from, to);
-            if (NUtils::Equals(transition, 0)) continue;
-            probabilityRandomStart[to] += probabilityRandomStart[from] * transition;
+    {    
+        for (int i = 0; i < amountStronglyConnectedComponents; ++i) {
+            probabilityRandomStart[i] = static_cast<double>(stronglyConnectedComponents[i].size()) / N;
         }
-        if (!NUtils::Equals(condensatedMatrix(from, from), 1)) {
-            probabilityRandomStart[from] = 0;
+        PrintResults("probabilityRandomStart start in component:", probabilityRandomStart);
+
+        for (int i = 0; i < amountStronglyConnectedComponents; ++i) {
+            int from = topologyCondensatedGraph[i];
+            for (int j = 0; j < amountStronglyConnectedComponents; ++j) {
+                if (i == j) continue;
+                int to = topologyCondensatedGraph[j];
+                Type transition = condensatedMatrix(from, to);
+                if (NUtils::Equals(transition, 0)) continue;
+                probabilityRandomStart[to] += probabilityRandomStart[from] * transition;
+            }
+            if (!NUtils::Equals(condensatedMatrix(from, from), 1)) {
+                probabilityRandomStart[from] = 0;
+            }
         }
+        PrintResults("probabilityRandomStart:", probabilityRandomStart);
+
+        NDrawer::TDrawer::GenerateAndDrawGraph(condensatedMatrix, "condensated", probabilityRandomStart);
     }
-    PrintResults("probabilityRandomStart:", probabilityRandomStart);
 
-    NDrawer::TDrawer::GenerateAndDrawGraph(condensatedMatrix, "condensated", probabilityRandomStart);
-
-    NAnalitycal::TAnalyticalSolution condensatedSolution(condensatedMatrix);
-    auto condensationDistribution = condensatedSolution.GetDistribution();
-
+    // creating condensated matrices
     std::vector<TMatrix> condensatedComponents;
     for (const auto& component : stronglyConnectedComponents) {
         size_t n = component.size();
@@ -163,16 +165,16 @@ int main(int argc, char** argv) {
 
     for (size_t currentColor = 0, end = condensatedComponents.size(); currentColor < end; ++currentColor) {
         const auto& currentComponent = condensatedComponents[currentColor];
-        int n = currentComponent.rows();
+        int nodesInComponent = currentComponent.rows();
         // check if state is irrevocable
         if (!NUtils::Equals(condensatedMatrix(currentColor, currentColor), 1)) continue;
         NAnalitycal::TAnalyticalSolution analytic(currentComponent);
-        NSimulation::TSimulationSolution imitated(currentComponent, Imitations, Iterations);
+        NImitation::TImitationSolution imitated(currentComponent, Imitations, Iterations);
         std::vector<Type> analyticDistribution = analytic.GetDistribution();
         std::vector<Type> imitatedDistribution = imitated.GetDistribution();
         std::vector<Type> errors = CountError(analyticDistribution, imitatedDistribution);
 
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < nodesInComponent; ++i) {
             const auto& globalNumber = stronglyConnectedComponents[currentColor][i];
             // distribution = <probability of being in component> * <probability of being at vertex>
             definedStart[globalNumber] = condensatedMatrix(0, currentColor) * analyticDistribution[i];
@@ -207,7 +209,7 @@ int main(int argc, char** argv) {
     Type sumRandomStart = std::accumulate(randomStart.begin(), randomStart.end(), 0.0);
     assert(NUtils::Equals(sumRandomStart, 1));
 
-    auto distributionError = CountError(totalSimulatedDistribution, randomStart);
+    auto distributionError = CountError(totalImitatedDistribution, randomStart);
     PrintResults("distributionError:", distributionError);
     return 0;
 }

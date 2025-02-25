@@ -5,20 +5,20 @@
 #include <vector>
 #include <boost/asio.hpp>
 
-namespace NSimulation {
+namespace NImitation {
 
 using namespace NTypes;
 
 using TThreadPool = boost::asio::thread_pool;
 
-class TSimulationSolution final {
+class TImitationSolution final {
 public:
-    TSimulationSolution(const TMatrix& P, size_t imitations, size_t iterations);
+    TImitationSolution(const TMatrix& P, size_t imitations, size_t iterations);
 
     std::vector<Type> GetDistribution() const;
 
 private:
-    void SimulateSolution(int imitations, int iterations);
+    void ImitateSolution(int imitations, int iterations);
 
     void Imitation(int iterations);
 
@@ -32,4 +32,4 @@ private:
     int Iterations_;
 };
 
-} // namespace NSimulation
+} // namespace NImitation

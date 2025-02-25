@@ -1,25 +1,25 @@
-#include "simulation.hpp"
+#include "imitation.hpp"
 #include "utils.hpp"
 
 #include <vector>
 #include <boost/asio.hpp>
 #include <thread>
 
-namespace NSimulation {
+namespace NImitation {
 
 using TThreadPool = boost::asio::thread_pool;
 
-TSimulationSolution::TSimulationSolution(const TMatrix& P, size_t imitations, size_t iterations)
+TImitationSolution::TImitationSolution(const TMatrix& P, size_t imitations, size_t iterations)
     : P_(P)
     , NumberStates_(P_.rows())
     , Count_(NumberStates_)
     , Imitations_(imitations)
     , Iterations_(iterations)
 {
-    SimulateSolution(Imitations_, Iterations_);
+    ImitateSolution(Imitations_, Iterations_);
 }
 
-std::vector<Type> TSimulationSolution::GetDistribution() const {
+std::vector<Type> TImitationSolution::GetDistribution() const {
     std::vector<Type> result;
     result.reserve(Count_.size());
     int total = Imitations_ * Iterations_;
@@ -29,7 +29,7 @@ std::vector<Type> TSimulationSolution::GetDistribution() const {
     return result;
 }
 
-void TSimulationSolution::SimulateSolution(int imitations, int iterations) {
+void TImitationSolution::ImitateSolution(int imitations, int iterations) {
     TThreadPool pool(std::thread::hardware_concurrency());
     for (int i = 0; i < imitations; ++i) {
         boost::asio::post(pool,
@@ -41,7 +41,7 @@ void TSimulationSolution::SimulateSolution(int imitations, int iterations) {
     pool.join();
 }
 
-void TSimulationSolution::Imitation(int iterations) {
+void TImitationSolution::Imitation(int iterations) {
     // int currentState = NUtils::GenerateIntNumber(0, NumberStates_ - 1);
     for (
         int i = 0, currentState = NUtils::GenerateIntNumber(0, NumberStates_ - 1);
@@ -52,7 +52,7 @@ void TSimulationSolution::Imitation(int iterations) {
     }
 }
 
-int TSimulationSolution::GetNextState(int currentState) const {
+int TImitationSolution::GetNextState(int currentState) const {
     auto randomNumber = NUtils::GenerateRandomNumber();
     Type currentValue = 0;
     for (int i = 0; i < NumberStates_; ++i) {
@@ -64,4 +64,4 @@ int TSimulationSolution::GetNextState(int currentState) const {
     assert(false);
 }
 
-} // namespace NSimulation
+} // namespace NImitation
