@@ -171,7 +171,8 @@ int main(int argc, char** argv) {
     for (const auto& i : probabilityRandomStart) {
         std::cout << i << " ";
     }
-    std::cout << "\n" << "\n";
+    std::cout << "\n\n";
+    NDrawer::TDrawer::GenerateAndDrawGraph(condensatedMatrix, "condensated", probabilityRandomStart);
 
     NAnalitycal::TAnalyticalSolution condensatedSolution(condensatedMatrix);
     auto condensationDistribution = condensatedSolution.GetDistribution();
@@ -230,7 +231,7 @@ int main(int argc, char** argv) {
         }
         std::cout << "\n";
     }
-    NDrawer::TDrawer drawing(P, "chain", definedStart);
+    NDrawer::TDrawer::GenerateAndDrawGraph(P, "chain", definedStart);
     std::cout << "definedStart:\n";
     Type sumDefinedStart = 0;
     for (size_t i = 0, end = definedStart.size(); i < end; ++i) {

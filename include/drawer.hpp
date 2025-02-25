@@ -10,19 +10,17 @@ namespace NDrawer {
 using namespace NTypes;
 
 class TDrawer{
+private:
+    TDrawer() = delete;
+
 public:
-    TDrawer(const TMatrix& P, std::string filename, const std::vector<Type>& probability);
+    static void GenerateAndDrawGraph(const TMatrix& P, std::string filename, const std::vector<Type>& probability = {});
 
 private:
-    void GenerateDotFile() const;
-    std::string GenerateNodesPenwidthCommand() const;
-    std::string GenerateArrow(int from, int to, Type label, Type penwidth) const;
-    void GenerateImage() const;
-
-private:
-    TMatrix P_;
-    std::string Filename_;
-    std::vector<Type> Probability_;
+    static void GenerateDotFile(const TMatrix& P, std::string filename, const std::vector<Type>& probability);
+    static std::string GenerateNodesPenwidthCommand(const TMatrix& P, const std::vector<Type>& probability);
+    static std::string GenerateArrow(int from, int to, Type label, Type penwidth);
+    static void GenerateImage(std::string filename);
 };
 
 } // namespace NDrawer
