@@ -23,8 +23,8 @@ private:
     std::vector<Type> GetDistribution() const;
 
     void ImitateSolution(int imitations, int iterations);
-    void Imitation(int iterations);
-    std::vector<int> ImitationImpl(int iterations) const;
+    void Imitation(int startNode, int iterations);
+    std::vector<int> ImitationImpl(int startNode, int iterations) const;
 
     int GetNextState(int currentState) const;
 

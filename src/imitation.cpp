@@ -4,7 +4,6 @@
 #include <vector>
 #include <boost/asio.hpp>
 #include <thread>
-#include <iostream>
 
 namespace NImitation {
 
@@ -30,12 +29,14 @@ std::vector<Type> TImitationSolution::ImitateAndGetDistribution() {
 
 void TImitationSolution::ImitateSolution(int imitations, int iterations) {
     TThreadPool pool(std::thread::hardware_concurrency());
-    for (int i = 0; i < imitations; ++i) {
-        boost::asio::post(pool,
-            [this, iterations]() {
-                this->Imitation(iterations);
-            }
-        );
+    for (int startNode = 0; startNode < NumberStates_; ++startNode) {
+        for (int _ = 0; _ < imitations; ++_) {
+            boost::asio::post(pool,
+                [this, startNode, iterations]() {
+                    this->Imitation(startNode, iterations);
+                }
+            );
+        }
     }
     pool.join();
 }
@@ -47,19 +48,18 @@ void TImitationSolution::CalculateDistribution() {
             Distribution_[state] += 1;
         }
     }
-    int total = Imitations_ * Iterations_;
+    int total = NumberStates_ * Imitations_ * Iterations_;
     for (auto& state : Distribution_){
         state /= total;
     }
-    std::cout << std::endl;
 }
 
 std::vector<Type> TImitationSolution::GetDistribution() const {
     return Distribution_;
 }
 
-void TImitationSolution::Imitation(int iterations) {
-    std::vector<int> localStates = ImitationImpl(iterations);
+void TImitationSolution::Imitation(int startNode, int iterations) {
+    std::vector<int> localStates = ImitationImpl(startNode, iterations);
 
     {
         std::lock_guard<std::mutex> lock(StatesMutex_);
@@ -67,11 +67,11 @@ void TImitationSolution::Imitation(int iterations) {
     }
 }
 
-std::vector<int> TImitationSolution::ImitationImpl(int iterations) const {
+std::vector<int> TImitationSolution::ImitationImpl(int startNode, int iterations) const {
     std::vector<int> localStates;
     localStates.reserve(iterations);
 
-    int currentState = NUtils::GenerateIntNumber(0, NumberStates_ - 1);
+    int currentState = startNode;
     for (int i = 0; i < iterations; ++i) {
         localStates.push_back(currentState);
         currentState = GetNextState(currentState);
