@@ -5,6 +5,9 @@ OUTPUT_FILE = output.txt
 
 NPROCS ?= $(shell nproc)
 
+IMITATIONS ?= 10
+ITERATIONS ?= 100
+
 BUILD_DIR = build
 
 all: build test run
@@ -38,7 +41,7 @@ rebuild: clean build
 
 install:
 	sudo apt-get update
-	sudo apt-get install -y cmake clang libgtest-dev
+	sudo apt-get install -y cmake clang libgtest-dev libboost-all-dev libeigen3-dev graphviz
 
 coverage: test
 	@llvm-profdata merge -sparse $(BUILD_DIR)/tests/default.profraw -o matrix.profdata
