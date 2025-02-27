@@ -33,7 +33,7 @@ void TGraph::FillCondensation() {
         for (const auto& [to, weight] : Graph_[from]) {
             auto fromComponent = Color_[from];
             auto toComponent = Color_[to];
-            if (NUtils::Equals(weight, 0) || fromComponent == toComponent) continue;
+            if (NUtils::Equals(weight, 0)) continue;
             Condensation_[fromComponent][toComponent] += weight;
         }
     }

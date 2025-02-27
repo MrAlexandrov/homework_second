@@ -55,36 +55,52 @@ std::vector<Type> CountError(const std::vector<Type>& lhs, const std::vector<Typ
     return result;
 }
 
-void NormalizeMatrix(TMatrix& matrix) {
-    int rows = matrix.rows();
-    int cols = matrix.cols();
-    for (int i = 0; i < rows; ++i) {
-        Type sum = 0;
-        for (int j = 0; j < cols; ++j) {
-            sum += matrix(i, j);
-        }
-        if (NUtils::Equals(sum, 1)) continue;
-        for (int j = 0; j < cols; ++j) {
-            if (NUtils::Equals(matrix(i, j), 0)) continue;
-            matrix(i, j) /= sum;
-        }
-        if (NUtils::Equals(sum, 0)) {
-            matrix(i, i) = 1;
-        }
-    }
-}
-
 TMatrix GenerateMatrix(const std::vector<std::unordered_map<int, Type>>& other) {
     int n = other.size();
 
     TMatrix matrix(n, n);
     for (int from = 0; from < n; ++from) {
+        Type sum = 0;
         for (const auto& [to, weight] : other[from]) {
+            sum += weight;
             matrix(from, to) = weight;
         }
+        for (const auto& [to, weight] : other[from]) {
+            matrix(from, to) = weight / sum;
+        }
     }
-    NormalizeMatrix(matrix);
     return matrix;
+}
+
+TMatrix RenumberNodes(const TMatrix& input, const std::vector<int>& renumber) {
+    size_t n = input.rows();
+    assert(n == renumber.size());
+    TMatrix P(n, n);
+    for (size_t i = 0; i < n; ++i) {
+        size_t newI = renumber[i];
+        for (size_t j = 0; j < n; ++j) {
+            size_t newJ = renumber[j];
+            P(i, j) = input(newI, newJ);
+        }
+    }
+    return P;
+}
+
+TMatrix ReorderNodes(const TMatrix& input) {
+    size_t n = input.rows();
+    NGraph::TGraph inputGraph(input);
+    std::vector<int> renumberedNodes;
+    {
+        inputGraph.FillStronglyConnectedComponents();
+        auto stronglyConnectedComponents = inputGraph.GetStronglyConnectedComponents();
+        renumberedNodes.reserve(n);
+        for (const auto& component : stronglyConnectedComponents) {
+            for (const auto& node : component) {
+                renumberedNodes.push_back(node);
+            }
+        }
+    }
+    return RenumberNodes(input, renumberedNodes);
 }
 
 int main(int argc, char** argv) {
@@ -97,8 +113,9 @@ int main(int argc, char** argv) {
 
     size_t N = 0;
     std::cin >> N;
-    std::cout << N << "\n";
-    TMatrix P = GetTransitionMatrix(N);
+    TMatrix inputP = GetTransitionMatrix(N);
+
+    TMatrix P = ReorderNodes(inputP);
     std::cout << "P:\n" << P << "\n\n";
 
     NImitation::TImitationSolution totalImitated(P, Imitations, Iterations);
@@ -131,21 +148,19 @@ int main(int argc, char** argv) {
 
         for (int i = 0; i < amountStronglyConnectedComponents; ++i) {
             int from = topologyCondensatedGraph[i];
-            for (int j = 0; j < amountStronglyConnectedComponents; ++j) {
-                if (i == j) continue;
+            for (int j = i + 1; j < amountStronglyConnectedComponents; ++j) {
                 int to = topologyCondensatedGraph[j];
                 Type transition = condensatedMatrix(from, to);
                 if (NUtils::Equals(transition, 0)) continue;
-                probabilityRandomStart[to] += probabilityRandomStart[from] * transition;
+                probabilityRandomStart[to] += probabilityRandomStart[from] * (transition / (1.0 - condensatedMatrix(from, from)));
             }
             if (!NUtils::Equals(condensatedMatrix(from, from), 1)) {
                 probabilityRandomStart[from] = 0;
             }
         }
         PrintResults("probabilityRandomStart:", probabilityRandomStart);
-
-        NDrawer::TDrawer::GenerateAndDrawGraph(condensatedMatrix, "condensated", probabilityRandomStart);
     }
+    NDrawer::TDrawer::GenerateAndDrawGraph(condensatedMatrix, "condensated", probabilityRandomStart);
 
     // creating condensated matrices
     std::vector<TMatrix> condensatedComponents;
@@ -177,7 +192,7 @@ int main(int argc, char** argv) {
         for (int i = 0; i < nodesInComponent; ++i) {
             const auto& globalNumber = stronglyConnectedComponents[currentColor][i];
             // distribution = <probability of being in component> * <probability of being at vertex>
-            definedStart[globalNumber] = condensatedMatrix(0, currentColor) * analyticDistribution[i];
+            definedStart[globalNumber] = (condensatedMatrix(0, currentColor) / (1.0 - condensatedMatrix(0, 0))) * analyticDistribution[i];
             randomStart[globalNumber] = probabilityRandomStart[currentColor] * analyticDistribution[i];
         }
 
@@ -185,8 +200,8 @@ int main(int argc, char** argv) {
             std::cout << "Component " << currentColor << ":\n";
             PrintResults("Nodes:", stronglyConnectedComponents[currentColor]);
 
-            std::cout << "currentComponent:\n";
-            std::cout << currentComponent << "\n";
+            // std::cout << "currentComponent:\n";
+            // std::cout << currentComponent << "\n";
             NPrecision::TPrecision changer(
                 std::cout.flags(),
                 std::cout.precision(),
