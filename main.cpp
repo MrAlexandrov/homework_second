@@ -41,7 +41,7 @@ void PrintResults(std::string_view text, const std::vector<T>& results) {
     std::cout << "\n";
 }
 
-std::vector<Type> CountError(const std::vector<Type>& lhs, const std::vector<Type>& rhs) {
+std::vector<Type> AbsoluteError(const std::vector<Type>& lhs, const std::vector<Type>& rhs) {
     assert(lhs.size() == rhs.size());
     int n = lhs.size();
     std::vector<Type> result(n);
@@ -53,6 +53,39 @@ std::vector<Type> CountError(const std::vector<Type>& lhs, const std::vector<Typ
         }
     );
     return result;
+}
+
+std::vector<Type> SampleAverage(const std::vector<std::vector<int>>& states) {
+    size_t n = states.size();
+    assert(n != 0);
+    size_t m = states.front().size();
+    std::vector<Type> average(m, 0);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            average[j] += states[i][j];
+        }
+    }
+    for (int j = 0; j < m; ++j) {
+        average[j] /= n;
+    }
+    return average;
+}
+
+std::vector<Type> StandartDeviation(const std::vector<Type>& average, const std::vector<std::vector<double>>& probabilities) {
+    size_t n = probabilities.size();
+    size_t m = average.size();
+    std::vector<Type> diffs(m);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            Type value = average[j] - probabilities[i][j];
+            diffs[j] += value * value;
+        }
+    }
+    for (int j = 0; j < m; ++j) {
+        diffs[j] /= n - 1;
+        diffs[j] = sqrt(diffs[j]);
+    }
+    return diffs;
 }
 
 TMatrix GenerateMatrix(const std::vector<std::unordered_map<int, Type>>& other) {
@@ -119,8 +152,6 @@ int main(int argc, char** argv) {
     std::cout << "P:\n" << P << "\n\n";
 
     NImitation::TImitationSolution totalImitated(P, Imitations, Iterations);
-    auto totalImitatedDistribution = totalImitated.ImitateAndGetDistribution();
-    PrintResults("totalImitatedDistribution:", totalImitatedDistribution);
 
     NGraph::TGraph graph(P);
     graph.FillStronglyConnectedComponents();
@@ -141,14 +172,14 @@ int main(int argc, char** argv) {
     // probability to reach irrevocable states
     std::vector<Type> probabilityRandomStart(amountStronglyConnectedComponents, 0);
     {    
-        for (int i = 0; i < amountStronglyConnectedComponents; ++i) {
-            probabilityRandomStart[i] = static_cast<double>(stronglyConnectedComponents[i].size()) / N;
+        for (int currentColor = 0; currentColor < amountStronglyConnectedComponents; ++currentColor) {
+            probabilityRandomStart[currentColor] = static_cast<double>(stronglyConnectedComponents[currentColor].size()) / N;
         }
         PrintResults("probabilityRandomStart start in component:", probabilityRandomStart);
 
-        for (int i = 0; i < amountStronglyConnectedComponents; ++i) {
-            int from = topologyCondensatedGraph[i];
-            for (int j = i + 1; j < amountStronglyConnectedComponents; ++j) {
+        for (int currentColor = 0; currentColor < amountStronglyConnectedComponents; ++currentColor) {
+            int from = topologyCondensatedGraph[currentColor];
+            for (int j = currentColor + 1; j < amountStronglyConnectedComponents; ++j) {
                 int to = topologyCondensatedGraph[j];
                 Type transition = condensatedMatrix(from, to);
                 if (NUtils::Equals(transition, 0)) continue;
@@ -158,7 +189,7 @@ int main(int argc, char** argv) {
                 probabilityRandomStart[from] = 0;
             }
         }
-        PrintResults("probabilityRandomStart:", probabilityRandomStart);
+        PrintResults("probabilityRandomStart in irrevocable state:", probabilityRandomStart);
     }
     NDrawer::TDrawer::GenerateAndDrawGraph(condensatedMatrix, "condensated", probabilityRandomStart);
 
@@ -187,12 +218,25 @@ int main(int argc, char** argv) {
         NImitation::TImitationSolution imitated(currentComponent, Imitations, Iterations);
         std::vector<Type> analyticDistribution = analytic.CalculateAndGetDistribution();
         std::vector<Type> imitatedDistribution = imitated.ImitateAndGetDistribution();
-        std::vector<Type> errors = CountError(analyticDistribution, imitatedDistribution);
+        std::vector<Type> absoluteError = AbsoluteError(analyticDistribution, imitatedDistribution);
+
+        // counting standart deviation
+        auto states = imitated.GetAllStates();
+        std::vector<std::vector<double>> probabilities(Imitations, std::vector(Iterations, 0.0));
+        for (size_t i = 0; i < Imitations; ++i) {
+            for (const auto& currentState : states[i]) {
+                ++probabilities[i][currentState];
+            }
+            for (int j = 0; j < N; ++j) {
+                probabilities[i][j] /= Iterations;
+            }
+        }
+        std::vector<Type> standartDeviation = StandartDeviation(imitatedDistribution, probabilities);
 
         for (int i = 0; i < nodesInComponent; ++i) {
             const auto& globalNumber = stronglyConnectedComponents[currentColor][i];
             // distribution = <probability of being in component> * <probability of being at vertex>
-            definedStart[globalNumber] = (condensatedMatrix(0, currentColor) / (1.0 - condensatedMatrix(0, 0))) * analyticDistribution[i];
+            // definedStart[globalNumber] = (condensatedMatrix(0, currentColor) / (1.0 - condensatedMatrix(0, 0))) * analyticDistribution[i];
             randomStart[globalNumber] = probabilityRandomStart[currentColor] * analyticDistribution[i];
         }
 
@@ -210,21 +254,32 @@ int main(int argc, char** argv) {
 
             PrintResults("Analytical distribution:", analyticDistribution);
             PrintResults("Imitated distribution:", imitatedDistribution);
-            PrintResults("Errors:", errors);
+            PrintResults("Absolute Error:", absoluteError);
+            PrintResults("Standart Deviation:", standartDeviation);
         }
         std::cout << "\n";
     }
-    NDrawer::TDrawer::GenerateAndDrawGraph(P, "chain", definedStart);
+    NDrawer::TDrawer::GenerateAndDrawGraph(P, "chain", randomStart);
 
-    PrintResults("definedStart:", definedStart);
-    Type sumDefinedStart = std::accumulate(definedStart.begin(), definedStart.end(), 0.0);
-    assert(NUtils::Equals(sumDefinedStart, 1));
+    {
+        NPrecision::TPrecision changer(
+            std::cout.flags(),
+            std::cout.precision(),
+            6
+        );
+        auto totalImitatedDistribution = totalImitated.ImitateAndGetDistribution();
+        PrintResults("Imitated distribution:", totalImitatedDistribution);
 
-    PrintResults("randomStart:", randomStart);
-    Type sumRandomStart = std::accumulate(randomStart.begin(), randomStart.end(), 0.0);
-    assert(NUtils::Equals(sumRandomStart, 1));
+        // PrintResults("definedStart:", definedStart);
+        // Type sumDefinedStart = std::accumulate(definedStart.begin(), definedStart.end(), 0.0);
+        // assert(NUtils::Equals(sumDefinedStart, 1));
 
-    auto distributionError = CountError(totalImitatedDistribution, randomStart);
-    PrintResults("distributionError:", distributionError);
+        PrintResults("Analytic distribution:", randomStart);
+        Type sumRandomStart = std::accumulate(randomStart.begin(), randomStart.end(), 0.0);
+        assert(NUtils::Equals(sumRandomStart, 1));
+
+        auto distributionError = AbsoluteError(totalImitatedDistribution, randomStart);
+        PrintResults("distributionError:", distributionError);
+    }
     return 0;
 }
