@@ -1,6 +1,7 @@
 #include "analytical.hpp"
 #include "graph.hpp"
 #include "drawer.hpp"
+#include "plotter.hpp"
 #include "precision.hpp"
 #include "imitation.hpp"
 #include "utils.hpp"
@@ -134,6 +135,37 @@ TMatrix ReorderNodes(const TMatrix& input) {
         }
     }
     return RenumberNodes(input, renumberedNodes);
+}
+
+std::vector<std::vector<int>> GenerateStates(
+    int amountStronglyConnectedComponents
+    , const std::vector<std::vector<int>>& stronglyConnectedComponents
+    , const TMatrix& condensatedMatrix
+    , const NImitation::TImitationSolution& totalImitated
+    , int Iterations
+) {
+    std::vector<std::vector<int>> states;
+    for (int currentColor = 0; currentColor < amountStronglyConnectedComponents; ++currentColor) {
+        size_t numberNodes = stronglyConnectedComponents[currentColor].size();
+        int amount = NUtils::Equals(condensatedMatrix(currentColor, currentColor), 1) ? 2 : 6;
+        for (int i = 0; i < amount; ++i) {
+            int startNode = NUtils::GenerateIntNumber(0, numberNodes - 1);
+            startNode = stronglyConnectedComponents[currentColor][startNode];
+            states.emplace_back(totalImitated.ImitationImpl(startNode, Iterations));
+        }
+    }
+    return states;
+}
+
+void PlotCharts(int Iterations, const std::vector<std::vector<int>>& states) {
+    NPlotter::TPlotter chart("chart");
+    std::vector<int> XValues(Iterations);
+    std::iota(XValues.begin(), XValues.end(), 0);
+    chart.SetXValues(XValues);
+    for (int i = 0, end = states.size(); i < end; ++i) {
+        chart.EmplaceChart(states[i], std::to_string(i));
+    }
+    chart.Plot();
 }
 
 int main(int argc, char** argv) {
@@ -281,5 +313,14 @@ int main(int argc, char** argv) {
         auto distributionError = AbsoluteError(totalImitatedDistribution, randomStart);
         PrintResults("distributionError:", distributionError);
     }
+
+    std::vector<std::vector<int>> states = GenerateStates(
+        amountStronglyConnectedComponents
+        , stronglyConnectedComponents
+        , condensatedMatrix
+        , totalImitated
+        , Iterations
+    );
+    PlotCharts(Iterations, states);
     return 0;
 }

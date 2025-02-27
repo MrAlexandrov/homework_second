@@ -24,8 +24,9 @@ private:
 
     void ImitateSolution(int imitations, int iterations);
     void Imitation(int startNode, int iterations);
+public: // for getting imitation data for plotting
     std::vector<int> ImitationImpl(int startNode, int iterations) const;
-
+private:
     int GetNextState(int currentState) const;
 
 private:
