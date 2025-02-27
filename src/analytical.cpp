@@ -4,21 +4,28 @@ namespace NAnalitycal {
 
 TAnalyticalSolution::TAnalyticalSolution(const TMatrix& P)
     : P_(P)
-    , Distribution_(CalculateStationaryDistribution())
 {
 }
 
-std::vector<Type> TAnalyticalSolution::GetDistribution() const {
-    std::vector<Type> result;
-    size_t m = Distribution_.rows();
-    result.reserve(m);
-    for (int i = 0; i < m; ++i) {
-        result.emplace_back(Distribution_(i));
-    }
-    return result;
+std::vector<Type> TAnalyticalSolution::CalculateAndGetDistribution() {
+    CalculateDistribution();
+    return GetDistribution();
 }
 
-TVector TAnalyticalSolution::CalculateStationaryDistribution() const {
+std::vector<Type> TAnalyticalSolution::GetDistribution() const {
+    return Distribution_;
+}
+
+void TAnalyticalSolution::CalculateDistribution() {
+    TVector distribution = CalculateDistributionImpl();
+    size_t n = distribution.rows();
+    Distribution_.reserve(n);
+    for (size_t i = 0; i < n; ++i) {
+        Distribution_.emplace_back(distribution(i));
+    }
+}
+
+TVector TAnalyticalSolution::CalculateDistributionImpl() const {
     size_t n = P_.rows();
 
     TMatrix A = P_.transpose() - TMatrix::Identity(n, n);

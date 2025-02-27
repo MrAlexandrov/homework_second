@@ -11,14 +11,17 @@ using namespace NTypes;
 class TAnalyticalSolution final {
 public:
     TAnalyticalSolution(const TMatrix&);
+    std::vector<Type> CalculateAndGetDistribution();
+
+private:
+    void CalculateDistribution();
+    TVector CalculateDistributionImpl() const;
+
     std::vector<Type> GetDistribution() const;
 
 private:
-    TVector CalculateStationaryDistribution() const;
-
-private:
     const TMatrix P_;
-    TVector Distribution_;
+    std::vector<Type> Distribution_;
 };
 
 } // namespace NAnalitycal

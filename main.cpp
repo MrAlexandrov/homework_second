@@ -95,14 +95,14 @@ int main(int argc, char** argv) {
     size_t Imitations = std::stoul(argv[1]);
     size_t Iterations = std::stoul(argv[2]);
 
-    size_t N = 5;
+    size_t N = 0;
     std::cin >> N;
     std::cout << N << "\n";
     TMatrix P = GetTransitionMatrix(N);
     std::cout << "P:\n" << P << "\n\n";
 
     NImitation::TImitationSolution totalImitated(P, Imitations, Iterations);
-    auto totalImitatedDistribution = totalImitated.GetDistribution();
+    auto totalImitatedDistribution = totalImitated.ImitateAndGetDistribution();
     PrintResults("totalImitatedDistribution:", totalImitatedDistribution);
 
     NGraph::TGraph graph(P);
@@ -170,8 +170,8 @@ int main(int argc, char** argv) {
         if (!NUtils::Equals(condensatedMatrix(currentColor, currentColor), 1)) continue;
         NAnalitycal::TAnalyticalSolution analytic(currentComponent);
         NImitation::TImitationSolution imitated(currentComponent, Imitations, Iterations);
-        std::vector<Type> analyticDistribution = analytic.GetDistribution();
-        std::vector<Type> imitatedDistribution = imitated.GetDistribution();
+        std::vector<Type> analyticDistribution = analytic.CalculateAndGetDistribution();
+        std::vector<Type> imitatedDistribution = imitated.ImitateAndGetDistribution();
         std::vector<Type> errors = CountError(analyticDistribution, imitatedDistribution);
 
         for (int i = 0; i < nodesInComponent; ++i) {
