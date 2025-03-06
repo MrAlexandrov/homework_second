@@ -41,7 +41,7 @@ rebuild: clean build
 
 install:
 	sudo apt-get update
-	sudo apt-get install -y cmake clang libgtest-dev libboost-all-dev libeigen3-dev graphviz
+	sudo apt-get install -y cmake clang libgtest-dev libboost-all-dev libeigen3-dev graphviz gnuplot
 
 coverage: test
 	@llvm-profdata merge -sparse $(BUILD_DIR)/tests/default.profraw -o matrix.profdata
